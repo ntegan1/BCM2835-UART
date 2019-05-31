@@ -1,5 +1,5 @@
 all: src/main.c
-	gcc -g src/main.c -o uart -lncurses
+	gcc -g src/main.c -o uart 
 
 edit: 
 	vim src/main.c 
