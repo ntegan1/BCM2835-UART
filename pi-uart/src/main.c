@@ -204,14 +204,19 @@ int enableUART () {
 	printf("\nTransmitting 4 'x' chars\n");
 
 	// Push 4  'x's to tx fifo
+	printf("%d DR is\n", *DR);
+	*DR = 'x';
+	printf("%d DR is\n", *DR);
+	*DR = 'x';
+	printf("%d DR is\n", *DR);
 	*DR = 'x';
 	*DR = 'x';
-	*DR = 'x';
-	*DR = 'x';
+	printf("%d DR is\n", *DR);
 	*DR = 'x';
 	*DR = 'x';
 		sleep(2);
 	
+	printf("%d DR is\n", *DR);
 
 	printf("\nRXINT: %d, TXINT: %d\n", *RIS & (1 << 4), *RIS & (1 << 5));
 	printf("Clearing\n");
