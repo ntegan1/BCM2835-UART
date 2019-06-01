@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include "main.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -9,7 +8,9 @@
 #include <inttypes.h>
 #include <errno.h>
 
-#define MEM_LEN (0xAC)
+#define MEM_LEN (4096)
+#define BCM2708_PERI_BASE        0x20000000
+#define GPIO_BASE                (BCM2708_PERI_BASE + 0x200000) /* GPIO controller */
 
 
 int 				enableUART ();
@@ -73,12 +74,15 @@ void mapMem () {
 		PROT_READ | PROT_WRITE,	// r/w
 		MAP_SHARED,
 		fd,
-		0x7E20000	// offset: PL011 UART mapped on 0x7E20100
+		//0x7E20000	// offset: PL011 UART mapped on 0x7E20100
+		//GPIO_BASE
+		  0xF2000000
 	);
 	//printf("Error: %d\n", errno);
 	//printf("uartMem at addr %p\n", uartMem);
 	errs += errno;
 	printf("Memory map successful, %d errs\n\n", errs);
+	close(fd);
 	
 }
 
@@ -90,22 +94,7 @@ int enableUART () {
 	////
 	volatile uint32_t * CR = (volatile uint32_t *) (uartMem + 0x30 + 0x100);	// CR @ 0x30, + 100 b/c page aligned
 	
-	// Enable uart
-	//printf("Before: %X, bit 0 = %d\n", *CR, *CR & 1);
-	*CR |= 1 << 0;
-	//printf("After: %X, bit 0 = %d\n", *CR, *CR & 1);
-
-	// disable CTS and RTShardware flow control
-	//printf("Before: %X\n", *CR & 0xC000);
-	*CR &= ~(0xC000);
-	//printf("After: %X\n",*CR & 0xC000);
-
-
-
-
-	// enable Rx, TX, and loopback
-	//printf("rx, tx, loopback Before: %X\n", *CR & 0x0380);
-	*CR |= 0x380;
+	*CR = 0;
 
 
 
@@ -181,6 +170,27 @@ int enableUART () {
 
 
 	////
+	//	IBRD int baud gen div 0x24  16 bits
+	////
+	volatile uint32_t * IBRD = (volatile uint32_t *) (uartMem + 0x24 + 0x100);	
+	printf("IBRD\t\t0x%X\t", *IBRD);	// b4
+	*IBRD = 14;
+	printf("0x%X\n", *IBRD);
+
+
+	////
+	//	FBRD frac baud gen div 0x28  6 bits
+	////
+	volatile uint32_t * FBRD = (volatile uint32_t *) (uartMem + 0x28 + 0x100);	
+	printf("FBRD\t\t0x%X\t", *FBRD);	// b4
+	*FBRD = 3;
+	printf("0x%X\n", *FBRD);
+
+
+
+
+
+	////
 	//	ICR int clear reg 0x44
 	////
 	volatile uint32_t * ICR = (volatile uint32_t *) (uartMem + 0x44 + 0x100);	
@@ -192,11 +202,46 @@ int enableUART () {
 	volatile uint32_t * DR = (volatile uint32_t *) (uartMem + 0x0 + 0x100);	
 
 
+	////
+	//	Flag Register 0x18
+	////
+	volatile uint32_t * FR = (volatile uint32_t *) (uartMem + 0x18 + 0x100);	
+
+
+
+	////
+	// MORE CR Setup
+	////
+	// Enable uart
+	//printf("Before: %X, bit 0 = %d\n", *CR, *CR & 1);
+	*CR |= 1 << 0;
+	//printf("After: %X, bit 0 = %d\n", *CR, *CR & 1);
+
+	// disable CTS and RTShardware flow control
+	//printf("Before: %X\n", *CR & 0xC000);
+	*CR &= ~(0xC000);
+	//printf("After: %X\n",*CR & 0xC000);
+
+	// enable Rx, TX, and loopback
+	//printf("rx, tx, loopback Before: %X\n", *CR & 0x0380);
+	*CR |= 0x380;
+
+	printf("msync return %d", msync(uartMem, 4096, 0));
+	printf(", errno: %d\n", errno);
+	printf("%d %d %d\n", EBUSY, EINVAL, ENOMEM);
+
+
 
 
 	////
 	// TESTING
 	////
+	// while bit 3 of FR (busy)
+	while (*FR & (0x1 << 3)) {
+		printf("Busywait\n");
+		sleep(1);
+	}
+	printf("FR is 0x%X\n", *FR);
 	printf("\nRXINT: %d, TXINT: %d\n", *RIS & (1 << 4), *RIS & (1 << 5));
 	printf("Clearing\n");
 	*ICR &= ~(3 << 4); // clear bits 5 and 4
@@ -219,11 +264,8 @@ int enableUART () {
 	printf("%d DR is\n", *DR);
 
 	printf("\nRXINT: %d, TXINT: %d\n", *RIS & (1 << 4), *RIS & (1 << 5));
-	printf("Clearing\n");
-	*ICR &= ~(3 << 4); // clear bits 5 and 4
-	printf("RXINT: %d, TXINT: %d\n", *RIS & (1 << 4), *RIS & (1 << 5));
-	printf("\nTransmitting 4 'x' chars\n");
 
+	printf("FR is 0x%X\n", *FR);
 
 
 	
