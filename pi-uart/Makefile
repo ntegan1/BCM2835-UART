@@ -6,3 +6,6 @@ edit:
 	
 clean:
 	rm -f uart
+
+alias:
+	echo 'alias f="make edit && clear && make && sudo ./uart"'

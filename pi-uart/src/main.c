@@ -8,7 +8,7 @@
 #include <inttypes.h>
 #include <errno.h>
 
-#define MEM_LEN (4096)
+#define MEM_LEN (8192)
 #define BCM2708_PERI_BASE        0x20000000
 #define GPIO_BASE                (BCM2708_PERI_BASE + 0x200000) /* GPIO controller */
 
@@ -76,7 +76,7 @@ void mapMem () {
 		fd,
 		//0x7E20000	// offset: PL011 UART mapped on 0x7E20100
 		//GPIO_BASE
-		  0xF2000000
+		GPIO_BASE
 	);
 	//printf("Error: %d\n", errno);
 	//printf("uartMem at addr %p\n", uartMem);
@@ -92,9 +92,10 @@ int enableUART () {
 	////
 	// Control Register
 	////
-	volatile uint32_t * CR = (volatile uint32_t *) (uartMem + 0x30 + 0x100);	// CR @ 0x30, + 100 b/c page aligned
-	
+	volatile uint32_t * CR = (volatile uint32_t *) (uartMem + 0x30 + 0x1000);	// CR @ 0x30, + 100 b/c page aligned
+	printf("CR%d\n", *CR);	
 	*CR = 0;
+	printf("CR%d\n", *CR);
 
 
 
@@ -102,7 +103,7 @@ int enableUART () {
 	////
 	// LCRH Line control reeg
 	////
-	volatile uint32_t * LCRH = (volatile uint32_t *) (uartMem + 0x2C + 0x100);	// LCRH @ 0x2C, + 100 page align
+	volatile uint32_t * LCRH = (volatile uint32_t *) (uartMem + 0x2C + 0x1000);	// LCRH @ 0x2C, + 100 page align
 
 	// 8 bit word size
 	//printf("before: %X\n", *LCRH & 0x60);
@@ -133,8 +134,9 @@ int enableUART () {
 	// IFLS Int FIFO Lvl Sel
 	////
 	printf("Reg\t\tB4\t\tAfter\t\t\n");
-	volatile uint32_t * IFLS = (volatile uint32_t *) (uartMem + 0x34 + 0x100);	// IFLS @ 0x34, + 100 page align
+	volatile uint32_t * IFLS = (volatile uint32_t *) (uartMem + 0x34 + 0x1000);	// IFLS @ 0x34, + 100 page align
 	printf("IFLS\t\t0x%X\t", *IFLS);
+	*IFLS = 0;
 
 	//receive fifo lvl sel bits 5:3, b010 1/2 full interrupt RXIFLSEL	
 	
@@ -153,7 +155,7 @@ int enableUART () {
 	////
 	// RIS Raw interrupt status register
 	////
-	volatile uint32_t * RIS = (volatile uint32_t *) (uartMem + 0x3C + 0x100);	// RIS @ 0x3C, + 100 page align
+	volatile uint32_t * RIS = (volatile uint32_t *) (uartMem + 0x3C + 0x1000);	// RIS @ 0x3C, + 100 page align
 	// rx int bit 4, tx bit 5
 	printf("RIS REG IS 0x%X\n", *RIS);
 
@@ -161,7 +163,7 @@ int enableUART () {
 	////
 	// IMSC int mask set clear reg
 	//// 
-	volatile uint32_t * IMSC = (volatile uint32_t *) (uartMem + 0x38 + 0x100);	// IMSC @ 0x38, + 100 page align 
+	volatile uint32_t * IMSC = (volatile uint32_t *) (uartMem + 0x38 + 0x1000);	// IMSC @ 0x38, + 100 page align 
 	// 5 TXIM, 4 TXIM
 	printf("IMSC\t\t0x%X\t", *IMSC); // before
 	*IMSC |= 0x30;	// set bits 5 and 4
@@ -172,7 +174,7 @@ int enableUART () {
 	////
 	//	IBRD int baud gen div 0x24  16 bits
 	////
-	volatile uint32_t * IBRD = (volatile uint32_t *) (uartMem + 0x24 + 0x100);	
+	volatile uint32_t * IBRD = (volatile uint32_t *) (uartMem + 0x24 + 0x1000);	
 	printf("IBRD\t\t0x%X\t", *IBRD);	// b4
 	*IBRD = 14;
 	printf("0x%X\n", *IBRD);
@@ -181,7 +183,7 @@ int enableUART () {
 	////
 	//	FBRD frac baud gen div 0x28  6 bits
 	////
-	volatile uint32_t * FBRD = (volatile uint32_t *) (uartMem + 0x28 + 0x100);	
+	volatile uint32_t * FBRD = (volatile uint32_t *) (uartMem + 0x28 + 0x1000);	
 	printf("FBRD\t\t0x%X\t", *FBRD);	// b4
 	*FBRD = 3;
 	printf("0x%X\n", *FBRD);
@@ -193,19 +195,19 @@ int enableUART () {
 	////
 	//	ICR int clear reg 0x44
 	////
-	volatile uint32_t * ICR = (volatile uint32_t *) (uartMem + 0x44 + 0x100);	
+	volatile uint32_t * ICR = (volatile uint32_t *) (uartMem + 0x44 + 0x1000);	
 
 
 	////
 	//	DR Data register 0x00
 	////
-	volatile uint32_t * DR = (volatile uint32_t *) (uartMem + 0x0 + 0x100);	
+	volatile uint32_t * DR = (volatile uint32_t *) (uartMem + 0x0 + 0x1000);	
 
 
 	////
 	//	Flag Register 0x18
 	////
-	volatile uint32_t * FR = (volatile uint32_t *) (uartMem + 0x18 + 0x100);	
+	volatile uint32_t * FR = (volatile uint32_t *) (uartMem + 0x18 + 0x1000);	
 
 
 
@@ -226,9 +228,6 @@ int enableUART () {
 	//printf("rx, tx, loopback Before: %X\n", *CR & 0x0380);
 	*CR |= 0x380;
 
-	printf("msync return %d", msync(uartMem, 4096, 0));
-	printf(", errno: %d\n", errno);
-	printf("%d %d %d\n", EBUSY, EINVAL, ENOMEM);
 
 
 
@@ -239,6 +238,7 @@ int enableUART () {
 	// while bit 3 of FR (busy)
 	while (*FR & (0x1 << 3)) {
 		printf("Busywait\n");
+		printf("Read: %X\n", *DR);
 		sleep(1);
 	}
 	printf("FR is 0x%X\n", *FR);
