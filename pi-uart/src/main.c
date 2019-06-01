@@ -55,16 +55,18 @@ int main ( int argc, char **argv) {
 	*/
 
 	mapMem();
-	printf("Memory map successful\n");
 	enableUART();
 
 
 }
 
 void mapMem () {
-	printf("Error: %d\n", errno);
+	int errs = 0;
+	//printf("Error: %d\n", errno);
+	errs += errno;
 	int fd = open("/dev/mem", O_RDWR | O_SYNC);
-	printf("Error: %d\n", errno);
+	//printf("Error: %d\n", errno);
+	errs += errno;
 	uartMem = (void *) mmap (
 		NULL,		// don't care address
 		MEM_LEN,	// how much mem i need? Need 0x8C + 32 = 0xAC?
@@ -73,8 +75,10 @@ void mapMem () {
 		fd,
 		0x7E20000	// offset: PL011 UART mapped on 0x7E20100
 	);
-	printf("Error: %d\n", errno);
-	printf("uartMem at addr %p\n", uartMem);
+	//printf("Error: %d\n", errno);
+	//printf("uartMem at addr %p\n", uartMem);
+	errs += errno;
+	printf("Memory map successful, %d errs\n\n", errs);
 	
 }
 
@@ -96,10 +100,12 @@ int enableUART () {
 	*CR &= ~(0xC000);
 	//printf("After: %X\n",*CR & 0xC000);
 
+
+
+
 	// enable Rx, TX, and loopback
-	printf("rx, tx, loopback Before: %X\n", *CR & 0x0380);
+	//printf("rx, tx, loopback Before: %X\n", *CR & 0x0380);
 	*CR |= 0x380;
-	printf("After: %X\n",*CR & 0x380);
 
 
 
@@ -122,6 +128,7 @@ int enableUART () {
 	// enable two bits
 	//printf("before: %X\n", *LCRH & 0x08);
 	*LCRH |= 0x08;
+
 	//printf("after: %X\n", *LCRH & 0x08);
 
 	// enable even parity bit 2 is even set, bit 1 is parity set
@@ -131,18 +138,27 @@ int enableUART () {
 
 	// enable break. low level on txd after tx? Idk if need TODO
 	//printf("before: %X\n", *LCRH & 0x01);
-	printf("afterbreak: %X\n", *LCRH & 0x01);
 
 
 	////
 	// IFLS Int FIFO Lvl Sel
 	////
+	printf("Reg\t\tB4\t\tAfter\t\t\n");
 	volatile uint32_t * IFLS = (volatile uint32_t *) (uartMem + 0x34 + 0x100);	// IFLS @ 0x34, + 100 page align
-	printf("IFLS REG IS 0x%X\n", *IFLS);
+	printf("IFLS\t\t0x%X\t", *IFLS);
 
-	//receive fifo lvl sel bits 5:3, b010 1/2 full
+	//receive fifo lvl sel bits 5:3, b010 1/2 full interrupt RXIFLSEL	
+	
+	*IFLS &= ~(5 << 3); // clear bits 5 and 3
+	*IFLS |= 1 << 4;	// Set bit 4
 
 	//tx fifo lvl sel bits 2:0, b010 1/2 full
+	*IFLS &= ~(5 << 0);	// clear bits 0 and 2
+
+	*IFLS |= 1 << 1;	// set bit 1
+
+
+	printf("0x%X\n", *IFLS);// after
 
 
 	////
@@ -153,8 +169,58 @@ int enableUART () {
 	printf("RIS REG IS 0x%X\n", *RIS);
 
 
-	// NEED: TODO, IMSC Int mask set clear 0x38, ICR int clear reg 0x44
+	////
+	// IMSC int mask set clear reg
+	//// 
+	volatile uint32_t * IMSC = (volatile uint32_t *) (uartMem + 0x38 + 0x100);	// IMSC @ 0x38, + 100 page align 
+	// 5 TXIM, 4 TXIM
+	printf("IMSC\t\t0x%X\t", *IMSC); // before
+	*IMSC |= 0x30;	// set bits 5 and 4
+		
+	printf("0x%X\n", *IMSC); // after
 
 
+	////
+	//	ICR int clear reg 0x44
+	////
+	volatile uint32_t * ICR = (volatile uint32_t *) (uartMem + 0x44 + 0x100);	
+
+
+	////
+	//	DR Data register 0x00
+	////
+	volatile uint32_t * DR = (volatile uint32_t *) (uartMem + 0x0 + 0x100);	
+
+
+
+
+	////
+	// TESTING
+	////
+	printf("\nRXINT: %d, TXINT: %d\n", *RIS & (1 << 4), *RIS & (1 << 5));
+	printf("Clearing\n");
+	*ICR &= ~(3 << 4); // clear bits 5 and 4
+	printf("RXINT: %d, TXINT: %d\n", *RIS & (1 << 4), *RIS & (1 << 5));
+	printf("\nTransmitting 4 'x' chars\n");
+
+	// Push 4  'x's to tx fifo
+	*DR = 'x';
+	*DR = 'x';
+	*DR = 'x';
+	*DR = 'x';
+	*DR = 'x';
+	*DR = 'x';
+		sleep(2);
+	
+
+	printf("\nRXINT: %d, TXINT: %d\n", *RIS & (1 << 4), *RIS & (1 << 5));
+	printf("Clearing\n");
+	*ICR &= ~(3 << 4); // clear bits 5 and 4
+	printf("RXINT: %d, TXINT: %d\n", *RIS & (1 << 4), *RIS & (1 << 5));
+	printf("\nTransmitting 4 'x' chars\n");
+
+
+
+	
 
 }
