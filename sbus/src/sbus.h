@@ -20,7 +20,7 @@
 
 	flags:
 	bit7 => ch17 is digital
-	bit7 => ch18 is digital
+	bit6 => ch18 is digital
 	bit5 => frame lost (red LED on rx)
 	bit4 => failsafe activated
 	bits3-1 not used
