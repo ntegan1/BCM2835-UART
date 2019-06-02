@@ -9,28 +9,13 @@
 #include <errno.h>
 
 #define MEM_LEN (8192)
-#define BCM2708_PERI_BASE       0x20000000
-#define GPIO_BASE            	(BCM2708_PERI_BASE + 0x200000) /* GPIO controller */
-#define MEM_PTR					(uartMem)
-#define CR						((volatile uint32_t *) (MEM_PTR + 0x30 + 0x1000))
-#define LCRH					((volatile uint32_t *) (MEM_PTR + 0x2C + 0x1000))
-#define IFLS					((volatile uint32_t *) (MEM_PTR + 0x34 + 0x1000))
-#define RIS						((volatile uint32_t *) (MEM_PTR + 0x3C + 0x1000))
-#define IMSC					((volatile uint32_t *) (MEM_PTR + 0x38 + 0x1000))
-#define IBRD					((volatile uint32_t *) (MEM_PTR + 0x24 + 0x1000))
-#define FBRD					((volatile uint32_t *) (MEM_PTR + 0x28 + 0x1000))
-#define ICR						((volatile uint32_t *) (MEM_PTR + 0x44 + 0x1000))
-#define DR						((volatile uint32_t *) (MEM_PTR + 0x00 + 0x1000))
-#define FR						((volatile uint32_t *) (MEM_PTR + 0x18 + 0x1000))
+#define BCM2708_PERI_BASE        0x20000000
+#define GPIO_BASE                (BCM2708_PERI_BASE + 0x200000) /* GPIO controller */
 
-void 				uartSetup 	();
-void				enableUart	();
-void				disableUart	();
-void 				mapMem 		();
+
+int 				enableUART ();
+void 				mapMem ();
 void *				uartMem;
-void				busyWait 	();
-void				clearFIFOs 	();
-void				setBaudrate	(int,int);
 
 
 int main ( int argc, char **argv) {
@@ -71,7 +56,7 @@ int main ( int argc, char **argv) {
 	*/
 
 	mapMem();
-	uartSetup();
+	enableUART();
 
 
 }
@@ -102,11 +87,12 @@ void mapMem () {
 }
 
 
-void uartSetup () {
+int enableUART () {
 
 	////
 	// Control Register
 	////
+	volatile uint32_t * CR = (volatile uint32_t *) (uartMem + 0x30 + 0x1000);	// CR @ 0x30, + 100 b/c page aligned
 	printf("CR%d\n", *CR);	
 	*CR = 0;
 	printf("CR%d\n", *CR);
@@ -117,6 +103,7 @@ void uartSetup () {
 	////
 	// LCRH Line control reeg
 	////
+	volatile uint32_t * LCRH = (volatile uint32_t *) (uartMem + 0x2C + 0x1000);	// LCRH @ 0x2C, + 100 page align
 
 	// 8 bit word size
 	//printf("before: %X\n", *LCRH & 0x60);
@@ -147,6 +134,7 @@ void uartSetup () {
 	// IFLS Int FIFO Lvl Sel
 	////
 	printf("Reg\t\tB4\t\tAfter\t\t\n");
+	volatile uint32_t * IFLS = (volatile uint32_t *) (uartMem + 0x34 + 0x1000);	// IFLS @ 0x34, + 100 page align
 	printf("IFLS\t\t0x%X\t", *IFLS);
 	*IFLS = 0;
 
@@ -167,6 +155,7 @@ void uartSetup () {
 	////
 	// RIS Raw interrupt status register
 	////
+	volatile uint32_t * RIS = (volatile uint32_t *) (uartMem + 0x3C + 0x1000);	// RIS @ 0x3C, + 100 page align
 	// rx int bit 4, tx bit 5
 	printf("RIS REG IS 0x%X\n", *RIS);
 
@@ -174,18 +163,62 @@ void uartSetup () {
 	////
 	// IMSC int mask set clear reg
 	//// 
+	volatile uint32_t * IMSC = (volatile uint32_t *) (uartMem + 0x38 + 0x1000);	// IMSC @ 0x38, + 100 page align 
 	// 5 TXIM, 4 TXIM
 	printf("IMSC\t\t0x%X\t", *IMSC); // before
 	*IMSC |= 0x30;	// set bits 5 and 4
 		
 	printf("0x%X\n", *IMSC); // after
 
-	setBaudrate(30, 0);
+
+	////
+	//	IBRD int baud gen div 0x24  16 bits
+	////
+	volatile uint32_t * IBRD = (volatile uint32_t *) (uartMem + 0x24 + 0x1000);	
+	printf("IBRD\t\t0x%X\t", *IBRD);	// b4
+	*IBRD = 14;
+	printf("0x%X\n", *IBRD);
+
+
+	////
+	//	FBRD frac baud gen div 0x28  6 bits
+	////
+	volatile uint32_t * FBRD = (volatile uint32_t *) (uartMem + 0x28 + 0x1000);	
+	printf("FBRD\t\t0x%X\t", *FBRD);	// b4
+	*FBRD = 3;
+	printf("0x%X\n", *FBRD);
+
+
+
+
+
+	////
+	//	ICR int clear reg 0x44
+	////
+	volatile uint32_t * ICR = (volatile uint32_t *) (uartMem + 0x44 + 0x1000);	
+
+
+	////
+	//	DR Data register 0x00
+	////
+	volatile uint32_t * DR = (volatile uint32_t *) (uartMem + 0x0 + 0x1000);	
+
+
+	////
+	//	Flag Register 0x18
+	////
+	volatile uint32_t * FR = (volatile uint32_t *) (uartMem + 0x18 + 0x1000);	
+
+
 
 	////
 	// MORE CR Setup
 	////
-	
+	// Enable uart
+	//printf("Before: %X, bit 0 = %d\n", *CR, *CR & 1);
+	*CR |= 1 << 0;
+	//printf("After: %X, bit 0 = %d\n", *CR, *CR & 1);
+
 	// disable CTS and RTShardware flow control
 	//printf("Before: %X\n", *CR & 0xC000);
 	*CR &= ~(0xC000);
@@ -194,72 +227,43 @@ void uartSetup () {
 	// enable Rx, TX, and loopback
 	//printf("rx, tx, loopback Before: %X\n", *CR & 0x0380);
 	*CR |= 0x380;
-	// Loopback is bit 7, disable
-	*CR &= ~(0x080);
 
-	enableUart();
+
+
+
+
+	////
+	// TESTING
+	////
+	// while bit 3 of FR (busy)
 	
 	printf("FR is 0x%X\n", *FR);
 	printf("\nRXINT: %d, TXINT: %d\n", *RIS & (1 << 4), *RIS & (1 << 5));
 	printf("Clearing\n");
 	*ICR &= ~(3 << 4); // clear bits 5 and 4
 	printf("RXINT: %d, TXINT: %d\n", *RIS & (1 << 4), *RIS & (1 << 5));
-	clearFIFOs();
+	printf("\nTransmitting 4 'x' chars\n");
 
-	*DR = 'a';
-	*DR = 'b';
-	*DR = 'c';
-	*DR = 'd';
-
-	printf("Writing a,b,c,d\n");
-	busyWait();
-	printf("\nReading: got \n");
-	while ( !(*FR & (0x10))) { 	// bit 4 is 1 if rx empty
-		printf("%c\n", *DR);
-		busyWait();
-
+	// Push 4  'x's to tx fifo
+	printf("%d DR is\n", *DR);
+	*DR = 'x';
+	while (*FR & (0x1 << 3)) {
+		printf("Busywait\n");
 	}
-
+	printf("Read: %X\n", *DR);
+	*DR = 'x';
+	*DR = 'y';
+	printf("%d DR is\n", *DR);
+	printf("%d DR is\n", *DR);
+		sleep(2);
 	
+	printf("%d DR is\n", *DR);
+
 	printf("\nRXINT: %d, TXINT: %d\n", *RIS & (1 << 4), *RIS & (1 << 5));
 
 	printf("FR is 0x%X\n", *FR);
 
 
 	
-
-}
-
-
-void				clearFIFOs 	() {
-	*LCRH &= ~(0x10);
-	busyWait();
-	*LCRH |= 0x10;
-	busyWait();
-}
-
-
-// 16 bit IBRD, 6 bit FBRD
-void				setBaudrate	(int i, int f) {
-	*IBRD = (i & 0xFFFF);
-	*FBRD = (f & 0x3F);
-}
-
-void				busyWait 	() {
-	printf("Busywait");
-	while (*FR & (0x1 << 3)) {
-		printf(".");
-	}
-	printf("\n");
-
-}
-
-void				disableUart	() {
-	*CR &= ~(1 << 0);
-}
-
-void				enableUart	() {
-	// Enable uart
-	*CR |= 1 << 0;
 
 }
