@@ -1,10 +1,17 @@
 # BCM2835-UART
-Controllign BCM2835 PL011 uart on Raspberry Pi 0 W
+Raspberry Pi Zero W UART implementation for use with sbus
+
+Goal:
+use BCM2835 PL011 UART peripheral
+to communicate using SBUS serial protocol
+
+for serial drone flight controller input
+
+
 
 
 ## Setting up PL011 on pins 14 and 15
 Backup config files in git repo.
-Can't get loopback test to work (Need to setup baudrate? Other regs?)
 
 #### Links (Some underscores, look at raw)
 * https://www.abelectronics.co.uk/kb/article/1035/raspberry-pi-3-serial-port-usage
