@@ -33,7 +33,7 @@
 ////
 #define START_BYTE				0xF0	// 11110000b
 #define END_BYTE				0x00	// 00000000b
-#define NUM_CHANNELS			22
+#define NUM_CHANNELS				22
 
 
 ////
@@ -41,7 +41,7 @@
 //
 //	## buf: 		place data to send here
 //					should be 3 + (22 *data) = 25 byte
-//	## channels:	22 bytes of (throttle percentages?)
+//	## channels:	16 uint16_t of (throttle percentages?)
 ////
-void fillBuf 	(void *buf, uint8_t *channels);
+void fillBuf 	(void *buf, uint16_t *channels);
 

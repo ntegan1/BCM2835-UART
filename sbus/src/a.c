@@ -9,7 +9,7 @@ int				numSent			;
 
 int main (int argc, char **argv) {
 	uint8_t				byteBuf[25];
-	uint8_t				channelBuf[22];
+	uint16_t			channelBuf[16];
 	int 				i;
 
 	
