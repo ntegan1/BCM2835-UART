@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include "sbus.h"
-#include "uart.h"
 
 void 			printByteBuf 	(void *);
 void			byteToBinStr 	(char*,uint8_t);
 void			testUart		();
+void 			transmit		(void *);
 
 int main (int argc, char **argv) {
 	uint8_t				byteBuf[25];
@@ -15,7 +15,12 @@ int main (int argc, char **argv) {
 	fillBuf(byteBuf, channelBuf);	
 	printByteBuf(byteBuf);
 	uartSetup();
-	testUart();
+
+	while (1) {
+		transmit(byteBuf);
+		busyWait();
+	}
+	//testUart();
 
 	return 0;
 }
@@ -58,5 +63,10 @@ void			testUart		() {
 	}
 
 
+}
+
+
+void 			transmit		(void *) {
+	// TODO test RIS thing < 4 full, write 4
 }
 

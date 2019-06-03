@@ -24,6 +24,8 @@
 	bit5 => frame lost (red LED on rx)
 	bit4 => failsafe activated
 	bits3-1 not used
+
+	## NEED TO uartSetup() before use sbus thing
 */
 
 ////
