@@ -20,11 +20,11 @@ void				setBaudrate	(int i, int f) {
 
 
 void				busyWait 	() {
-	//printf("Busywait");
+	printf("Busywait");
 	while (*FR & (0x1 << 3)) {
-		//printf(".");
+		printf(".");
 	}
-	//printf("\n");
+	printf("\n");
 
 }
 
@@ -114,12 +114,6 @@ void 				uartSetup 	() {
 
 void				clearICRs	() {
     *ICR &= ~(3 << 4); // clear bits 5 and 4
-}
-
-
-int					txBufLow	() {
-	// TXRIS bit 5 of RIS reg (UARTTXINTR int status)
-	return (*RIS & (0x20)) != 0;
 }
 
 

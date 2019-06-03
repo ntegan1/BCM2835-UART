@@ -4,7 +4,8 @@
 void 			printByteBuf 	(void *);
 void			byteToBinStr 	(char*,uint8_t);
 void			testUart		();
-void 			transmit		(void *);
+void 			transmit		(uint8_t);
+int				numSent			;
 
 int main (int argc, char **argv) {
 	uint8_t				byteBuf[25];
@@ -16,8 +17,29 @@ int main (int argc, char **argv) {
 	printByteBuf(byteBuf);
 	uartSetup();
 
+	numSent = 0;
 	while (1) {
-		transmit(byteBuf);
+		if (txBufLow()) {
+			transmit(byteBuf[numSent++]);	// transmit  4
+			busyWait();								// delete me?
+			transmit(byteBuf[numSent++]);	// transmit  4
+			busyWait();								// delete me?
+			transmit(byteBuf[numSent++]);	// transmit  4
+			busyWait();								// delete me?
+			transmit(byteBuf[numSent++]);	// transmit  4
+			busyWait();								// delete me?
+
+
+
+			if (numSent == 24) {
+				// send the last one
+				transmit(0);
+				numSent = 0;
+			}
+			
+			
+			
+		}
 		busyWait();
 	}
 	//testUart();
@@ -49,16 +71,27 @@ void			byteToBinStr (char* buf, uint8_t byte) {
 
 
 void			testUart		() {
+	// clear Int's (rx < half full)
+	clearICRs();
+	busyWait();
+	printf("is txBufLow?%d\n",txBufLow());
 	*DR = 'a';
+	printf("is txBufLow?%d\n",txBufLow());
 	*DR = 'b';
+	printf("is txBufLow?%d\n",txBufLow());
 	*DR = 'c';
+	printf("is txBufLow?%d\n",txBufLow());
 	*DR = 'd';
+	printf("is txBufLow?%d\n",txBufLow());
+	*DR = 'f';
+	printf("is txBufLow?%d\n",txBufLow());
 
 	printf("Writing a,b,c,d\n");
 	busyWait();
 	printf("\nReading: got \n");
 	while ( !(*FR & (0x10))) { 	// bit 4 is 1 if rx empty
 		printf("%c\n", *DR);
+		printf("txbuflow? huh%d\n", txBufLow());
 		busyWait();
 	}
 
@@ -66,7 +99,8 @@ void			testUart		() {
 }
 
 
-void 			transmit		(void *) {
-	// TODO test RIS thing < 4 full, write 4
+void 			transmit		(uint8_t byte) {
+	*DR = byte;	
 }
+
 

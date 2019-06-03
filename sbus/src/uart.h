@@ -39,6 +39,8 @@ void 				mapMem 		();
 void				busyWait 	();
 void				clearFIFOs 	();
 void				setBaudrate	(int,int);
+void				clearICRs	();
+int					txBufLow	();
 
 
 ////

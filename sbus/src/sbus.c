@@ -1,5 +1,4 @@
 #include "sbus.h"
-#include "uart.h"
 
 
 ////
@@ -23,7 +22,7 @@ void fillBuf 	(void *buf, uint8_t *channels) {
 	// data (bytes 1->22)
 	for (i = 0; i < NUM_CHANNELS; i++) {
 		// convert channel (0-100) to (0->11 bits/2047)	
-		bufBytes[i + 1] = 100;	//TODO (actually implement)
+		bufBytes[i + 1] = 300;	//TODO (actually implement)
 	}
 
 
