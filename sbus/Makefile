@@ -1,3 +1,5 @@
+
+
 all:
 	gcc src/uart.c src/sbus.c src/sbus.h src/a.c -o a.out
 alias:

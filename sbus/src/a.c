@@ -6,42 +6,36 @@ void			byteToBinStr 	(char*,uint8_t);
 void			testUart		();
 void 			transmit		(uint8_t);
 int				numSent			;
+void			sendByteBuf		(uint8_t *);
 
 int main (int argc, char **argv) {
 	uint8_t				byteBuf[25];
-	uint8_t				channelBuf[22];
+	uint16_t				channelBuf[16];
 	int 				i;
 
+	// Zero out chanelBuf
+	for (i = 0; i < 16; i++) channelBuf[i] = atoi(argv[1]);
 	
 	fillBuf(byteBuf, channelBuf);	
-	printByteBuf(byteBuf);
+	//printByteBuf(byteBuf);
 	uartSetup();
+	
+	for (i = 0; i < 100; i++) {
+
+		sendByteBuf(byteBuf);
+		//transmit(0xF0);
+		usleep(SBUS_PACKET_SLEEP);
+
+		
+	}
+	
+
+	//transmit(0xAA);
+	busyWait();
+	exit(-1);
 
 	numSent = 0;
-	while (1) {
-		if (txBufLow()) {
-			transmit(byteBuf[numSent++]);	// transmit  4
-			busyWait();								// delete me?
-			transmit(byteBuf[numSent++]);	// transmit  4
-			busyWait();								// delete me?
-			transmit(byteBuf[numSent++]);	// transmit  4
-			busyWait();								// delete me?
-			transmit(byteBuf[numSent++]);	// transmit  4
-			busyWait();								// delete me?
-
-
-
-			if (numSent == 24) {
-				// send the last one
-				transmit(0);
-				numSent = 0;
-			}
-			
-			
-			
-		}
-		busyWait();
-	}
+	
 	//testUart();
 
 	return 0;
@@ -100,7 +94,44 @@ void			testUart		() {
 
 
 void 			transmit		(uint8_t byte) {
-	*DR = byte;	
+		*DR = byte;
+
+}
+
+
+void			sendByteBuf		(uint8_t *byteBuf) {
+	// write 16
+	*DR = byteBuf[0];
+	*DR = byteBuf[1];
+	*DR = byteBuf[2];
+	*DR = byteBuf[3];
+	*DR = byteBuf[4];
+	*DR = byteBuf[5];
+	*DR = byteBuf[6];
+	*DR = byteBuf[7];
+	*DR = byteBuf[8];
+	*DR = byteBuf[9];
+	*DR = byteBuf[10];
+	*DR = byteBuf[11];
+	*DR = byteBuf[12];
+	*DR = byteBuf[13];
+	*DR = byteBuf[14];
+	*DR = byteBuf[15];
+	while (!txBufLow());
+
+	// write 8
+	*DR = byteBuf[16];
+	*DR = byteBuf[17];
+	*DR = byteBuf[18];
+	*DR = byteBuf[19];
+	*DR = byteBuf[20];
+	*DR = byteBuf[21];
+	*DR = byteBuf[22];
+	*DR = byteBuf[23];
+	while (!txBufLow());
+
+	// write 1
+	*DR = byteBuf[24];
 }
 
 
