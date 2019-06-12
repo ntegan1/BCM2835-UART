@@ -1,6 +1,5 @@
 #include "sbus.h"
 
-
 ////
 // Lookup table for fast reversing
 ////
@@ -15,7 +14,7 @@ uint8_t table[256] = {0, 128, 64, 192, 32, 160, 96, 224, 16, 144, 80, 208, 48, 1
 	# Might need 5V level shifter for flight control input
 */
 
-void fillBuf 		(void *buf, uint16_t *channels) {
+void fillBuf 	(void *buf, uint16_t *channels) {
 	uint8_t 			*bufBytes;
 	int					i;		//iterator
 	int 				bytesDone = 0;
@@ -30,7 +29,6 @@ void fillBuf 		(void *buf, uint16_t *channels) {
 	for (i = 0; i < NUM_DATA_BYTES; i++) {
 		// convert channel (0-100) to (0->11 bits/2047)	
 		bufBytes[i + 1] = channels[3];	//TODO (actually implement)
-
 	}
 
 

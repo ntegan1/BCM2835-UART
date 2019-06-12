@@ -10,7 +10,7 @@ void			sendByteBuf		(uint8_t *);
 
 int main (int argc, char **argv) {
 	uint8_t				byteBuf[25];
-	uint16_t				channelBuf[16];
+	uint16_t			channelBuf[16];
 	int 				i;
 
 	// Zero out chanelBuf
