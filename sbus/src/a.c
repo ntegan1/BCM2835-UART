@@ -17,7 +17,7 @@ int main (int argc, char **argv) {
 	for (i = 0; i < 16; i++) channelBuf[i] = atoi(argv[1]);
 	
 	fillBuf(byteBuf, channelBuf);	
-	//printByteBuf(byteBuf);
+	printByteBuf(byteBuf);
 	uartSetup();
 	
 	for (i = 0; i < 100; i++) {
