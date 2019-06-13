@@ -1,4 +1,5 @@
 #include "sbus.h"
+#include "payload.h"
 
 ////
 // Lookup table for fast reversing
@@ -26,11 +27,7 @@ void fillBuf 	(void *buf, uint16_t *channels) {
 	bufBytes[0] = START_BYTE;	
 
 	// data (bytes 1->22)
-	for (i = 0; i < NUM_DATA_BYTES; i++) {
-		// convert channel (0-100) to (0->11 bits/2047)	
-		bufBytes[i + 1] = channels[3];	//TODO (actually implement)
-	}
-
+	channelsToBytes(channels, bufBytes);
 
 	// flags (byte 23)
 	bufBytes[23] = 0;
