@@ -34,7 +34,7 @@
 #define START_BYTE				0xF0	// 11110000b
 #define END_BYTE				0x00	// 00000000b
 #define NUM_DATA_BYTES			22
-#define SBUS_PACKET_SLEEP		14000	// 9,000 uS = 9mS originally
+#define SBUS_PACKET_SLEEP		9000	// 9,000 uS = 9mS originally
 										// between 25 byte packets
 
 

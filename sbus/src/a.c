@@ -15,18 +15,58 @@ int main (int argc, char **argv) {
   int         j;
 
 	// Zero out chanelBuf
-	//for (i = 0; i < 16; i++) channelBuf[i] = atoi(argv[1]);
+	for (i = 0; i < 16; i++) channelBuf[i] = 192;
 	//fillBuf(byteBuf, channelBuf);	
 	//printByteBuf(byteBuf);
 	uartSetup();
-	
-	for (i = 192; i < 1792; i++) {
-    for (j = 0; j < 16; j++) channelBuf[j]  = i;
-	  fillBuf(byteBuf, channelBuf);	
+
+	printf("Enter a char\n");
+	int a;
+	system("/bin/stty raw");
+	for (;;) {
+		//a = getchar();
+		//https://stackoverflow.com/questions/1798511/how-to-avoid-pressing-enter-with-getchar#1798833
+
+		a = fgetc(stdin);
+		if (a == 'w' && channelBuf[0] < 1792) {
+			channelBuf[0] = channelBuf[0] + 1;
+			fillBuf(byteBuf, channelBuf);
+		}
+		else if (a == 's' && channelBuf[0] > 192) {
+			channelBuf[0] = channelBuf[0] - 1;
+			fillBuf(byteBuf, channelBuf);
+		}
+		else if (a == '.') {
+			system("/bin/stty cooked");
+			exit(-1);
+		}
+		else {
+			printf("No char pressed\n");
+		}
+		/*
+		if (a == 0x1B) {
+			a = getchar();	
+			a = getchar();
+			switch (a) {
+				case 0x41:
+					printf("UP\n");
+					break;
+				case 0x42:
+					printf("DOWN\n");
+					break;
+				case 0x43:
+					printf("RIGHT\n");
+					break;
+				case 0x44:
+					printf("LEFT\n");
+					break;
+			}
+		}
+		*/
 		sendByteBuf(byteBuf);
 		usleep(SBUS_PACKET_SLEEP);
 
-		
+
 	}
 	
 
