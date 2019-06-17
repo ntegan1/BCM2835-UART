@@ -12,18 +12,18 @@ int main (int argc, char **argv) {
 	uint8_t				byteBuf[25];
 	uint16_t			channelBuf[16];
 	int 				i;
+  int         j;
 
 	// Zero out chanelBuf
-	for (i = 0; i < 16; i++) channelBuf[i] = atoi(argv[1]);
-	
-	fillBuf(byteBuf, channelBuf);	
-	printByteBuf(byteBuf);
+	//for (i = 0; i < 16; i++) channelBuf[i] = atoi(argv[1]);
+	//fillBuf(byteBuf, channelBuf);	
+	//printByteBuf(byteBuf);
 	uartSetup();
 	
-	for (i = 0; i < 100; i++) {
-
+	for (i = 192; i < 1792; i++) {
+    for (j = 0; j < 16; j++) channelBuf[j]  = i;
+	  fillBuf(byteBuf, channelBuf);	
 		sendByteBuf(byteBuf);
-		//transmit(0xF0);
 		usleep(SBUS_PACKET_SLEEP);
 
 		

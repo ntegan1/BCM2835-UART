@@ -23,8 +23,8 @@ void fillBuf 	(void *buf, uint16_t *channels) {
 	// Setup
 	bufBytes = (uint8_t *) buf;
 
-	// start byte (byte 0)
-	bufBytes[0] = START_BYTE;	
+	// start byte (byte 0) = 0xF0
+	bufBytes[0] = 0x0F; //START_BYTE;	
 
 	// data (bytes 1->22)
 	channelsToBytes(channels, bufBytes);
@@ -32,11 +32,11 @@ void fillBuf 	(void *buf, uint16_t *channels) {
 	// flags (byte 23)
 	bufBytes[23] = 0;
 	
-	// endbyte (byte 24)
+	// endbyte (byte 24) 0x00
 	bufBytes[24] = END_BYTE;
 
 	// flip all bytes
-	reverseBits(bufBytes);
+  //reverseBits(bufBytes);
 	
 }
 

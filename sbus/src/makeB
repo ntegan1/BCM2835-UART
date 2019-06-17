@@ -1,0 +1,7 @@
+#!/bin/sh
+gccWarnings=""
+sleep 1
+clear && \
+rm b.out && echo "CLEANED b.out" && \
+gccWarnings=$(gcc b.c payload.c -o b.out 2>&1) && \
+echo "MADE b.out"

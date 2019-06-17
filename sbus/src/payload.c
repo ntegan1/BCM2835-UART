@@ -31,6 +31,12 @@ void channelsToBytes (uint16_t * channels, uint8_t *bytes) {
 
 	uint8_t 			tmp;
 
+  // databyte 1 
+  // bit 0 ch0.0, bit 7 ch0.7
+  // 
+  // databyte 2
+  // bit 0 ch0.8, bit 7 ch1.4
+
 	// first byte is bits 0-7 of chan0
 	bytes[1] = 0;
 	//printf("Before: ch0 0x%X, bytes1 0x%X\n", channels[0], bytes[1]);
@@ -39,13 +45,7 @@ void channelsToBytes (uint16_t * channels, uint8_t *bytes) {
 	//printf("Before: ch0 0x%X, bytes1 0x%X\n", channels[0], bytes[1]);
 	
 
-
-	// first byte is bits 0-7 of chan0
-	bytes[1] = 0;
-	getBits(channels[0]	, 0	, 7 , tmp);
-	setBits(bytes[1]	, 0	, 7	, tmp); 
-	
-	bytes[2] = 0;
+		bytes[2] = 0;
 	getBits(channels[0], 8, 10, tmp);
 	setBits(bytes[2], 0, 2, tmp);
 	getBits(channels[1], 0, 4, tmp);
