@@ -1,4 +1,14 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <string.h>
+
+#include <linux/stat.h>
+
+#define FIFO_FILE       ".fifo"
+
 #include "sbus.h"
 
 void 			printByteBuf 	(void *);
@@ -7,77 +17,59 @@ void			testUart		();
 void 			transmit		(uint8_t);
 int				numSent			;
 void			sendByteBuf		(uint8_t *);
+void			sendChannelControl(uint16_t *, char);
 
 int main (int argc, char **argv) {
 	uint8_t				byteBuf[25];
 	uint16_t			channelBuf[16];
 	int 				i;
-  int         j;
+  	int         			j;
 
-	// Zero out chanelBuf
-	for (i = 0; i < 16; i++) channelBuf[i] = 192;
-	//fillBuf(byteBuf, channelBuf);	
-	//printByteBuf(byteBuf);
+	// FIFO_SETUP
+	int				fd;	// fifo fd
+	int				bytes;	//bytes read
+	char 				readbuf[80];
+	char				outStr[60];
+	system("rm -rf .fifo");
+	umask(0);
+	mknod(FIFO_FILE, S_IFIFO|0666,0);
+	fd = open(".fifo", O_RDONLY);
+	int ret = fcntl(fd, F_SETFL, O_NONBLOCK);
+	printf("async fifo fcntl returned: %X\n", ret);
+
+	// Middle out channelBuf
+	for (i = 0; i < 16; i++) channelBuf[i] = 800; // = (1792 - 192) / 2;
 	uartSetup();
 
-	printf("Enter a char\n");
-	int a;
-	system("/bin/stty raw");
 	for (;;) {
-		//a = getchar();
-		//https://stackoverflow.com/questions/1798511/how-to-avoid-pressing-enter-with-getchar#1798833
-
-		a = fgetc(stdin);
-		if (a == 'w' && channelBuf[0] < 1792) {
-			channelBuf[0] = channelBuf[0] + 1;
-			fillBuf(byteBuf, channelBuf);
+		// while no bytes to read
+		while (!(bytes = read(fd, readbuf, 50))) {
+			sendByteBuf(byteBuf);
+			usleep(SBUS_PACKET_SLEEP);
 		}
-		else if (a == 's' && channelBuf[0] > 192) {
-			channelBuf[0] = channelBuf[0] - 1;
-			fillBuf(byteBuf, channelBuf);
+		
+		// bytes to read
+		strncpy(outStr, readbuf, bytes);
+		printf("Received Control: ");
+		for (i = 0; i < bytes; i++) {
+			sendChannelControl(channelBuf, readbuf[i]);
 		}
-		else if (a == '.') {
-			system("/bin/stty cooked");
-			exit(-1);
+		printf("\n");
+		if (readbuf[0] == '.') {
+			system("clear");
+			system("echo Receiver closed");
+			return(0);
 		}
-		else {
-			printf("No char pressed\n");
-		}
-		/*
-		if (a == 0x1B) {
-			a = getchar();	
-			a = getchar();
-			switch (a) {
-				case 0x41:
-					printf("UP\n");
-					break;
-				case 0x42:
-					printf("DOWN\n");
-					break;
-				case 0x43:
-					printf("RIGHT\n");
-					break;
-				case 0x44:
-					printf("LEFT\n");
-					break;
-			}
-		}
-		*/
-		sendByteBuf(byteBuf);
-		usleep(SBUS_PACKET_SLEEP);
-
 
 	}
 	
 
-	//transmit(0xAA);
 	busyWait();
-	exit(-1);
+	exit(0);
 
-	numSent = 0;
-	
+
+
 	//testUart();
-
 	return 0;
 }
 
@@ -175,3 +167,7 @@ void			sendByteBuf		(uint8_t *byteBuf) {
 }
 
 
+
+void			sendChannelControl(uint16_t *chanBuf, char cmd) {
+
+}
