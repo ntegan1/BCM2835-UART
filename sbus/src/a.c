@@ -18,6 +18,7 @@ void 			transmit		(uint8_t);
 int				numSent			;
 void			sendByteBuf		(uint8_t *);
 void			sendChannelControl(uint16_t *, char);
+void			decrementChannelBuf(uint16_t * channelBuf);
 
 int main (int argc, char **argv) {
 	uint8_t				byteBuf[25];
@@ -44,6 +45,8 @@ int main (int argc, char **argv) {
 	for (;;) {
 		// while no bytes to read
 		while (!(bytes = read(fd, readbuf, 50))) {
+			decrementChannelBuf(channelBuf);
+			fillBuf(byteBuf, channelBuf);
 			sendByteBuf(byteBuf);
 			usleep(SBUS_PACKET_SLEEP);
 		}
@@ -53,6 +56,7 @@ int main (int argc, char **argv) {
 		printf("Received Control: ");
 		for (i = 0; i < bytes; i++) {
 			sendChannelControl(channelBuf, readbuf[i]);
+			fillBuf(byteBuf, channelBuf);
 		}
 		printf("\n");
 		if (readbuf[0] == '.') {
@@ -168,6 +172,25 @@ void			sendByteBuf		(uint8_t *byteBuf) {
 
 
 
+#define ACCEL 10
 void			sendChannelControl(uint16_t *chanBuf, char cmd) {
+	if (cmd == 'q' && (chanBuf[2] - ACCEL > 192)) {
+		chanBuf[2] -= ACCEL;
+	}
+	else if (cmd == 'e' && (chanBuf[2] + ACCEL < 1792)) {
+		chanBuf[2] += ACCEL;
+	}
+}
 
+
+void			decrementChannelBuf(uint16_t * channelBuf) {
+	int i;
+	for (i = 0; i < 16; i++) {
+		if (channelBuf[i] > 800) {
+			channelBuf[i] -= 1;
+		}
+		else if (channelBuf[i] < 800) {
+			channelBuf[i] += 1;
+		}
+	}
 }
