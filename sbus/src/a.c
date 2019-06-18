@@ -33,30 +33,40 @@ int main (int argc, char **argv) {
 	int				bytes;	//bytes read
 	char 				readbuf[80];
 	char				outStr[60];
+	/*
 	system("rm -rf .fifo");
 	umask(0);
 	mknod(FIFO_FILE, S_IFIFO|0666,0);
 	fd = open(".fifo", O_RDONLY);
-	int ret = fcntl(fd, F_SETFL, O_NONBLOCK);
-	printf("async fifo fcntl returned: %X\n", ret);
+	*/
+	//int ret = fcntl(fd, F_SETFL, O_NONBLOCK);
+	//printf("async fifo fcntl returned: %X\n", ret);
 	armed = 0;
 
 	// Middle out channelBuf
-	for (i = 0; i < 16; i++) channelBuf[i] = 800; // = (1792 - 192) / 2;
+	for (i = 0; i < 16; i++) channelBuf[i] = 200; // = (1792 - 192) / 2;
 	channelBuf[2] = 0;
 	uartSetup();
 
 	for (;;) {
 		// while no bytes to read
+
+		channelBuf[0] += 1;
+		if (channelBuf[0] == 1792) channelBuf[0] = 192;
+		fillBuf(byteBuf, channelBuf);
+		sendByteBuf(byteBuf);
+		usleep(SBUS_PACKET_SLEEP);
+		printf("Sending %d\n", channelBuf[0]);
+		//printf("channelBuf %d\n", channelBuf[0]);
+		/*
 		while (!(bytes = read(fd, readbuf, 50))) {
-			decrementChannelBuf(channelBuf);
-			fillBuf(byteBuf, channelBuf);
+//			decrementChannelBuf(channelBuf);
+//			fillBuf(byteBuf, channelBuf);
 			sendByteBuf(byteBuf);
 			usleep(SBUS_PACKET_SLEEP);
 		}
 		
 		// bytes to read
-		strncpy(outStr, readbuf, bytes);
 		for (i = 0; i < bytes; i++) {
 			sendChannelControl(channelBuf, readbuf[i]);
 			fillBuf(byteBuf, channelBuf);
@@ -66,6 +76,7 @@ int main (int argc, char **argv) {
 			system("echo Receiver closed");
 			return(0);
 		}
+		*/
 
 	}
 	
