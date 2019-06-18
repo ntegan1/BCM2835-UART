@@ -20,6 +20,8 @@ void			sendByteBuf		(uint8_t *);
 void			sendChannelControl(uint16_t *, char);
 void			decrementChannelBuf(uint16_t * channelBuf);
 
+int armed;
+
 int main (int argc, char **argv) {
 	uint8_t				byteBuf[25];
 	uint16_t			channelBuf[16];
@@ -37,9 +39,11 @@ int main (int argc, char **argv) {
 	fd = open(".fifo", O_RDONLY);
 	int ret = fcntl(fd, F_SETFL, O_NONBLOCK);
 	printf("async fifo fcntl returned: %X\n", ret);
+	armed = 0;
 
 	// Middle out channelBuf
 	for (i = 0; i < 16; i++) channelBuf[i] = 800; // = (1792 - 192) / 2;
+	channelBuf[2] = 0;
 	uartSetup();
 
 	for (;;) {
@@ -53,12 +57,10 @@ int main (int argc, char **argv) {
 		
 		// bytes to read
 		strncpy(outStr, readbuf, bytes);
-		printf("Received Control: ");
 		for (i = 0; i < bytes; i++) {
 			sendChannelControl(channelBuf, readbuf[i]);
 			fillBuf(byteBuf, channelBuf);
 		}
-		printf("\n");
 		if (readbuf[0] == '.') {
 			system("clear");
 			system("echo Receiver closed");
@@ -174,18 +176,56 @@ void			sendByteBuf		(uint8_t *byteBuf) {
 
 #define ACCEL 10
 void			sendChannelControl(uint16_t *chanBuf, char cmd) {
-	if (cmd == 'q' && (chanBuf[2] - ACCEL > 192)) {
+	/*
+	if (cmd == 'q' && (chanBuf[2] - ACCEL > 0)) {
 		chanBuf[2] -= ACCEL;
 	}
 	else if (cmd == 'e' && (chanBuf[2] + ACCEL < 1792)) {
 		chanBuf[2] += ACCEL;
+	}
+	else if (cmd == 's' && (chanBuf[0] - ACCEL > 192)) {
+		chanBuf[0] -= ACCEL;
+	}
+	else if (cmd == 'w' && (chanBuf[0] + ACCEL < 1792)) {
+		chanBuf[0] += ACCEL;
+	}
+	else if (cmd == 'a' && (chanBuf[1] - ACCEL > 192)) {
+		chanBuf[1] -= ACCEL;
+	}
+	else if (cmd == 'd' && (chanBuf[1] + ACCEL < 1792)) {
+		chanBuf[1] += ACCEL;
+	}
+	else if (cmd == 'z' && (chanBuf[3] - ACCEL > 192)) {
+		chanBuf[3] -= ACCEL;
+	}
+	else if (cmd == 'c' && (chanBuf[3] + ACCEL < 1792)) {
+		chanBuf[3] += ACCEL;
+	}
+	*/
+	if (cmd == 'p') {
+		if (!armed) {
+			chanBuf[4] = 1792;	
+			armed = 1;
+			printf("ARMED\n");
+		}
+		else {
+			printf("DEARMED\n");
+			armed = 0;
+			chanBuf[4] = 800;
+		}
 	}
 }
 
 
 void			decrementChannelBuf(uint16_t * channelBuf) {
 	int i;
-	for (i = 0; i < 16; i++) {
+	for (i = 0; i < 4; i++) {
+		if (i == 2) {
+			if (channelBuf[2] > 2) {
+				channelBuf[2] -= 2;
+			}
+			break;
+		}
 		if (channelBuf[i] > 800) {
 			channelBuf[i] -= 1;
 		}
