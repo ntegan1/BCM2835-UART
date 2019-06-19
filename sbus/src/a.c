@@ -56,7 +56,6 @@ int main (int argc, char **argv) {
 		fillBuf(byteBuf, channelBuf);
 		sendByteBuf(byteBuf);
 		usleep(SBUS_PACKET_SLEEP);
-		printf("Sending %d\n", channelBuf[0]);
 		//printf("channelBuf %d\n", channelBuf[0]);
 		/*
 		while (!(bytes = read(fd, readbuf, 50))) {
