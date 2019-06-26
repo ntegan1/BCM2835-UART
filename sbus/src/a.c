@@ -249,13 +249,14 @@ void			decrementChannelBuf(uint16_t * channelBuf) {
 			if (channelBuf[2] > 192) {
 				channelBuf[2] -= 2;
 			}
-			break;
 		}
-		if (channelBuf[i] > 992) {
-			channelBuf[i] -= 1;
-		}
-		else if (channelBuf[i] < 992) {
-			channelBuf[i] += 1;
+		else {
+			if (channelBuf[i] > 992) {
+				channelBuf[i] -= 1;
+			}
+			else if (channelBuf[i] < 992) {
+				channelBuf[i] += 1;
+			}
 		}
 	}
 }
