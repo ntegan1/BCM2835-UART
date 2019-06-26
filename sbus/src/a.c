@@ -33,27 +33,44 @@ int main (int argc, char **argv) {
 	int				bytes;	//bytes read
 	char 				readbuf[80];
 	char				outStr[60];
-	/*
+	
 	system("rm -rf .fifo");
 	umask(0);
 	mknod(FIFO_FILE, S_IFIFO|0666,0);
 	fd = open(".fifo", O_RDONLY);
-	*/
-	//int ret = fcntl(fd, F_SETFL, O_NONBLOCK);
-	//printf("async fifo fcntl returned: %X\n", ret);
+	int ret = fcntl(fd, F_SETFL, O_NONBLOCK);
+	printf("async fifo fcntl returned: %X\n", ret);
 	armed = 0;
 
 	// Middle out channelBuf
-	for (i = 0; i < 16; i++) channelBuf[i] = 200; // = (1792 - 192) / 2;
-	channelBuf[2] = 0;
+	for (i = 0; i < 16; i++) channelBuf[i] = 0; // = (1792 - 192) / 2;
+	channelBuf[0] = 992;
+
+	channelBuf[1] = 992;
+
+	channelBuf[3] = 992;
+	channelBuf[2] = 192;
 	uartSetup();
 
 	for (;;) {
 		// while no bytes to read
 
-		channelBuf[0] += 1;
-		if (channelBuf[0] == 1792) channelBuf[0] = 192;
-		fillBuf(byteBuf, channelBuf);
+		while (!(bytes = read(fd, readbuf, 50))) {
+			
+			decrementChannelBuf(channelBuf);
+			fillBuf(byteBuf, channelBuf);
+			sendByteBuf(byteBuf);
+			usleep(SBUS_PACKET_SLEEP);
+		}
+		for (i = 0; i < bytes; i++) {
+			sendChannelControl(channelBuf, readbuf[i]);
+		}
+		if (readbuf[0] == '.') {
+			system("clear");
+			system("echo Receiver closed");
+			return(0);
+		}
+				fillBuf(byteBuf, channelBuf);
 		sendByteBuf(byteBuf);
 		usleep(SBUS_PACKET_SLEEP);
 		//printf("channelBuf %d\n", channelBuf[0]);
@@ -186,8 +203,7 @@ void			sendByteBuf		(uint8_t *byteBuf) {
 
 #define ACCEL 10
 void			sendChannelControl(uint16_t *chanBuf, char cmd) {
-	/*
-	if (cmd == 'q' && (chanBuf[2] - ACCEL > 0)) {
+	if (cmd == 'q' && (chanBuf[2] - ACCEL > 192)) {
 		chanBuf[2] -= ACCEL;
 	}
 	else if (cmd == 'e' && (chanBuf[2] + ACCEL < 1792)) {
@@ -211,7 +227,6 @@ void			sendChannelControl(uint16_t *chanBuf, char cmd) {
 	else if (cmd == 'c' && (chanBuf[3] + ACCEL < 1792)) {
 		chanBuf[3] += ACCEL;
 	}
-	*/
 	if (cmd == 'p') {
 		if (!armed) {
 			chanBuf[4] = 1792;	
@@ -231,15 +246,15 @@ void			decrementChannelBuf(uint16_t * channelBuf) {
 	int i;
 	for (i = 0; i < 4; i++) {
 		if (i == 2) {
-			if (channelBuf[2] > 2) {
+			if (channelBuf[2] > 192) {
 				channelBuf[2] -= 2;
 			}
 			break;
 		}
-		if (channelBuf[i] > 800) {
+		if (channelBuf[i] > 992) {
 			channelBuf[i] -= 1;
 		}
-		else if (channelBuf[i] < 800) {
+		else if (channelBuf[i] < 992) {
 			channelBuf[i] += 1;
 		}
 	}
