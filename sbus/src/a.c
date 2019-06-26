@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
+#include <pthread.h>
 
 #include <linux/stat.h>
 
@@ -19,14 +20,21 @@ int				numSent			;
 void			sendByteBuf		(uint8_t *);
 void			sendChannelControl(uint16_t *, char);
 void			decrementChannelBuf(uint16_t * channelBuf);
+void      *sendingThreadFunc ();
+void      *tickThreadFunc ();
 
 int armed;
+pthread_mutex_t byteBufLock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t channelBufLock = PTHREAD_MUTEX_INITIALIZER;
+uint8_t				byteBuf[25];
+uint16_t			channelBuf[16];
+
 
 int main (int argc, char **argv) {
-	uint8_t				byteBuf[25];
-	uint16_t			channelBuf[16];
-	int 				i;
-  	int         			j;
+		int 				i;
+  int         			j;
+  pthread_t     sendingThread;
+  pthread_t     tickThread;
 
 	// FIFO_SETUP
 	int				fd;	// fifo fd
@@ -52,48 +60,37 @@ int main (int argc, char **argv) {
 	channelBuf[2] = 192;
 	uartSetup();
 
+  // Loop for sendingThread
+  pthread_create(&sendingThread, NULL, sendingThreadFunc, NULL /*noarg*/);
+  pthread_create(&tickThread, NULL, tickThreadFunc, NULL);
+
+  // Loop for input
 	for (;;) {
 		// while no bytes to read
 
 		while (!(bytes = read(fd, readbuf, 50))) {
+      // Wait for user input
+      usleep(1000); // wait 1ms
 			
-			decrementChannelBuf(channelBuf);
-			fillBuf(byteBuf, channelBuf);
-			sendByteBuf(byteBuf);
-			usleep(SBUS_PACKET_SLEEP);
-		}
+					}
+    pthread_mutex_lock(&channelBufLock);
 		for (i = 0; i < bytes; i++) {
 			sendChannelControl(channelBuf, readbuf[i]);
 		}
+    pthread_mutex_unlock(&channelBufLock);
 		if (readbuf[0] == '.') {
+      if (pthread_cancel(sendingThread)) {
+        // Return code
+        printf("Error closing UARTsender thread\n");
+      }
+      if (pthread_cancel(tickThread)) {
+        // Return code
+        printf("Error closing tick thread\n");
+      }
 			system("clear");
 			system("echo Receiver closed");
 			return(0);
 		}
-				fillBuf(byteBuf, channelBuf);
-		sendByteBuf(byteBuf);
-		usleep(SBUS_PACKET_SLEEP);
-		//printf("channelBuf %d\n", channelBuf[0]);
-		/*
-		while (!(bytes = read(fd, readbuf, 50))) {
-//			decrementChannelBuf(channelBuf);
-//			fillBuf(byteBuf, channelBuf);
-			sendByteBuf(byteBuf);
-			usleep(SBUS_PACKET_SLEEP);
-		}
-		
-		// bytes to read
-		for (i = 0; i < bytes; i++) {
-			sendChannelControl(channelBuf, readbuf[i]);
-			fillBuf(byteBuf, channelBuf);
-		}
-		if (readbuf[0] == '.') {
-			system("clear");
-			system("echo Receiver closed");
-			return(0);
-		}
-		*/
-
 	}
 	
 
@@ -259,4 +256,33 @@ void			decrementChannelBuf(uint16_t * channelBuf) {
 			}
 		}
 	}
+}
+
+
+void      *sendingThreadFunc () {
+  for (;;) {
+
+    pthread_mutex_lock(&byteBufLock);
+    sendByteBuf(byteBuf);
+    pthread_mutex_unlock(&byteBufLock);
+    usleep(SBUS_PACKET_SLEEP);
+		
+	}
+  return NULL;
+}
+
+
+void      *tickThreadFunc () {
+
+  for (;;) {
+    pthread_mutex_lock(&channelBufLock);
+    decrementChannelBuf(channelBuf);
+    pthread_mutex_lock(&byteBufLock);
+    fillBuf(byteBuf, channelBuf);
+    pthread_mutex_unlock(&byteBufLock);
+    pthread_mutex_unlock(&channelBufLock);
+    usleep(5000);   // wait 5ms
+  }
+  return NULL;
+
 }

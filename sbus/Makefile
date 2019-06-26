@@ -1,7 +1,7 @@
 
 
 all:
-	gcc src/uart.c src/sbus.c src/sbus.h src/a.c src/payload.c -o a.out
+	gcc src/uart.c src/sbus.c src/sbus.h src/a.c src/payload.c -o a.out -pthread
 alias:
 	echo 'alias f="make edit && clear && make && sudo ./a.out"'
 edit:
